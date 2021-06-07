@@ -59,7 +59,7 @@ class ContainerViewController: UIViewController {
         if !canPerformSegue {
             print("***** ERROR :: Segue with Identifier '\(identifier)' does not exist!")
         } else if !shouldPerformSegue {
-            print("***** NOTE ::Segue with Identifier '\(identifier)' being block by shouldPerformSegue")
+            print("***** NOTE :: Segue with Identifier '\(identifier)' being block by shouldPerformSegue")
         } else {
             super.performSegue(withIdentifier: identifier, sender: sender)
         }
@@ -77,8 +77,6 @@ class ContainerViewController: UIViewController {
             swapFromViewController(fromViewController: nil, toViewController: destination, offset: 0.0)
         }
     }
-    
-    
     
     private func swapFromViewController(fromViewController: UIViewController?, toViewController: UIViewController, offset: CGFloat) -> Void {
         
@@ -128,10 +126,8 @@ class ContainerViewController: UIViewController {
             
             delegate?.containerView(self, didSwapFromViewController: fromViewController, toViewController: toViewController)
         }
-        
     }
     
-
 }
 
 protocol ContainerViewControllerDelegate: class {
