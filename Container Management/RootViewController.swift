@@ -23,35 +23,22 @@ class RootViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        CVC_ANIMATE_VIEW_CONTROLLER_SWAP = true
+        CVC_ANIMATE_ALL_TRANSITIONS = true
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.navigationTableView.rawValue, sender: nil)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.red.rawValue, sender: nil)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 9.0) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.green.rawValue, sender: nil)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 11.0) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.blue.rawValue, sender: nil)
-        }
-        
-        
         // Force the Error
-        DispatchQueue.main.asyncAfter(deadline: .now() + 13.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.001) {
             self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.red.rawValue, sender: nil)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 13.05) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.002) {
             self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.green.rawValue, sender: nil)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 13.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.003) {
             self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.blue.rawValue, sender: nil)
         }
     }

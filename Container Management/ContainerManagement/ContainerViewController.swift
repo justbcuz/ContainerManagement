@@ -12,6 +12,8 @@ import UIKit
 // to disable view controller swap animation.
 var CVC_ANIMATE_VIEW_CONTROLLER_SWAP: Bool = true
 
+var CVC_ANIMATE_ALL_TRANSITIONS: Bool = false
+
 class ContainerViewController: UIViewController {
      
     weak public var delegate: ContainerViewControllerDelegate?
@@ -32,7 +34,9 @@ class ContainerViewController: UIViewController {
         willSegueHandler?(segue)
         delegate?.containerView(self, willSegue: segue)
         
-        swap(toViewController: segue.destination)
+        let containerTransition = ContainerTransition(identifier: segue.identifier ?? "UNKOWN-IDENTIFIER", destination: segue.destination, duration: 1.0, options: [.transitionCrossDissolve])
+        
+        performContainerTransition(containerTransition)
     }
     
     private var willSegueHandler: ((UIStoryboardSegue) -> ())?
@@ -65,58 +69,34 @@ class ContainerViewController: UIViewController {
         }
     }
     
-    func swap(toViewController destination: UIViewController) {
+    private func swapFromViewController(_ fromViewController: UIViewController?, toViewController: UIViewController, duration: TimeInterval = 1.0, options: UIView.AnimationOptions = [], completion: ((Bool) -> Void)? = nil ) -> Void {
         
-        destination.parentContainerViewController = self
-        
-        destination.view.frame = CGRect(origin: CGPoint.zero, size: view.frame.size)
-        
-        if !children.isEmpty {
-            swapFromViewController(fromViewController: children[0], toViewController: destination, offset: 0.0)
-        } else {
-            swapFromViewController(fromViewController: nil, toViewController: destination, offset: 0.0)
-        }
-    }
-    
-    private func swapFromViewController(fromViewController: UIViewController?, toViewController: UIViewController, offset: CGFloat) -> Void {
+        let from = (fromViewController?.view.subviews[0] as? UILabel)?.text?.replacingOccurrences(of: "\n", with: " ") ?? "<nil>"
+        let to = (toViewController.view.subviews[0] as? UILabel)?.text?.replacingOccurrences(of: "\n", with: " ") ?? "<nil>"
+
+        print("\(Date().timeIntervalSinceReferenceDate) Swap command: \(from) -> \(to)")
         
         delegate?.containerView(self, willSwapFromViewController: fromViewController, toViewController: toViewController)
         
         if let fromViewController = fromViewController {
-            
-            // FIXME: There seems to be times this breaks when called multiple times during animation sequence.
-            
-            if CVC_ANIMATE_VIEW_CONTROLLER_SWAP {
+                
+            fromViewController.willMove(toParent: nil)
+            addChild(toViewController)
 
-                // This section seems to fail when animation is interrupted. Maybe?
+            transition(from: fromViewController, to: toViewController, duration: duration, options: options, animations: {
+                // Nothing to do but read that the animation block was necessary
+                // See Bullet 3. https://stackoverflow.com/a/48369709
+                print("\(Date().timeIntervalSinceReferenceDate) Animation block: \(from) -> \(to)")
+            }) { (finished) in
+                print("\(Date().timeIntervalSinceReferenceDate) Completion (\(finished)): \(from) -> \(to)")
                 
-                fromViewController.willMove(toParent: nil)
-                addChild(toViewController)
-
-                transition(from: fromViewController, to: toViewController, duration: 1.0, options: UIView.AnimationOptions.transitionCrossDissolve, animations: {
-                    // Nothing to do but read that the animation block was necessary
-                    // See Bullet 3. https://stackoverflow.com/a/48369709
-                }) { (finished) in
-                    fromViewController.removeFromParent()
-                    fromViewController.view.removeFromSuperview()
-                    toViewController.didMove(toParent: self)
-                    
-                    self.delegate?.containerView(self, didSwapFromViewController: fromViewController, toViewController: toViewController)
-                }
-                
-            } else {
-                
-                // This Section seem to make it work, but no animation transition.
-                
-                fromViewController.willMove(toParent: nil)
-                fromViewController.view.removeFromSuperview()
                 fromViewController.removeFromParent()
-
-                addChild(toViewController)
-                view.addSubview(toViewController.view)
+                fromViewController.view.removeFromSuperview()
                 toViewController.didMove(toParent: self)
                 
-                delegate?.containerView(self, didSwapFromViewController: fromViewController, toViewController: toViewController)
+                self.delegate?.containerView(self, didSwapFromViewController: fromViewController, toViewController: toViewController)
+                
+                completion?(finished)
             }
             
         } else {
@@ -125,12 +105,48 @@ class ContainerViewController: UIViewController {
             toViewController.didMove(toParent: self)
             
             delegate?.containerView(self, didSwapFromViewController: fromViewController, toViewController: toViewController)
+            
+            completion?(true)
+        }
+    }
+    
+    private var activeContainerTransition: ContainerTransition?
+    private var containerTransitionQueue: [ContainerTransition] = []
+    
+    func performContainerTransition(_ transition: ContainerTransition) {
+        containerTransitionQueue.append(transition)
+        
+        // There was already a transition in the queue.
+        if containerTransitionQueue.count > 2 && CVC_ANIMATE_ALL_TRANSITIONS == false {
+            let lastIndex: Int = containerTransitionQueue.count - 1
+            containerTransitionQueue.removeSubrange(1..<lastIndex)
+        }
+        
+        performNextContainerTransition()
+    }
+    
+    func performNextContainerTransition() {
+        
+        if let nextContainerTransition = containerTransitionQueue.first, nextContainerTransition != self.activeContainerTransition {
+            self.activeContainerTransition = nextContainerTransition
+            
+            nextContainerTransition.destination.parentContainerViewController = self
+            nextContainerTransition.destination.view.frame = CGRect(origin: CGPoint.zero, size: view.frame.size)
+            
+            let fromViewController = children.isEmpty ? nil : children[0]
+            
+            swapFromViewController(fromViewController, toViewController: nextContainerTransition.destination, duration: nextContainerTransition.duration, options: nextContainerTransition.options) { [weak self] finished in
+                if let transitionIndex = self?.containerTransitionQueue.firstIndex(of: nextContainerTransition) {
+                    self?.containerTransitionQueue.remove(at: transitionIndex)
+                    self?.performNextContainerTransition()
+                }
+            }
         }
     }
     
 }
 
-protocol ContainerViewControllerDelegate: class {
+protocol ContainerViewControllerDelegate: AnyObject {
     
     func containerView(_ containerView: ContainerViewController, willSegue segue: UIStoryboardSegue) -> Swift.Void // Optional
     func containerView(_ containerView: ContainerViewController, shouldPerformSegueWithIdentifier identifier: String, sender: Any?) -> Bool // Optional
@@ -193,5 +209,16 @@ extension UIViewController {
         set {
             objc_setAssociatedObject(self, &AssociatedObjectKeys.ParentContainerViewController, newValue, .OBJC_ASSOCIATION_ASSIGN)
         }
+    }
+}
+
+struct ContainerTransition: Equatable {
+    var identifier: String
+    var destination: UIViewController
+    var duration: TimeInterval = 1.0
+    var options: UIView.AnimationOptions = []
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        return lhs.identifier == rhs.identifier && lhs.duration == rhs.duration && lhs.options == rhs.options
     }
 }
