@@ -31,19 +31,11 @@ class ContainerViewController: UIViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        willSegueHandler?(segue)
         delegate?.containerView(self, willSegue: segue)
         
         let containerTransition = ContainerTransition(identifier: segue.identifier ?? "UNKOWN-IDENTIFIER", destination: segue.destination, duration: 1.0, options: [.transitionCrossDissolve])
         
         performContainerTransition(containerTransition)
-    }
-    
-    private var willSegueHandler: ((UIStoryboardSegue) -> ())?
-    
-    func performSegue(withIdentifier identifier: String, sender: Any?, willSegueHandler: ((UIStoryboardSegue) -> ())?) {
-        self.willSegueHandler = willSegueHandler
-        performSegue(withIdentifier: identifier, sender: sender)
     }
     
     override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
