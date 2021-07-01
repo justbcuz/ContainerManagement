@@ -8,12 +8,6 @@
 
 import UIKit
 
-// Update Container View Controller global variable
-// to disable view controller swap animation.
-var CVC_ANIMATE_VIEW_CONTROLLER_SWAP: Bool = true
-
-var CVC_ANIMATE_ALL_TRANSITIONS: Bool = false
-
 class ContainerViewController: UIViewController {
      
     weak public var delegate: ContainerViewControllerDelegate?
@@ -102,6 +96,7 @@ class ContainerViewController: UIViewController {
         }
     }
     
+    public  var skipUnseenTransitions: Bool = true
     private var activeContainerTransition: ContainerTransition?
     private var containerTransitionQueue: [ContainerTransition] = []
     
@@ -109,7 +104,7 @@ class ContainerViewController: UIViewController {
         containerTransitionQueue.append(transition)
         
         // There was already a transition in the queue.
-        if containerTransitionQueue.count > 2 && CVC_ANIMATE_ALL_TRANSITIONS == false {
+        if containerTransitionQueue.count > 2 && skipUnseenTransitions == true {
             let lastIndex: Int = containerTransitionQueue.count - 1
             containerTransitionQueue.removeSubrange(1..<lastIndex)
         }
