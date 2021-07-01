@@ -27,7 +27,14 @@ class ContainerViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         delegate?.containerView(self, willSegue: segue)
         
-        let containerTransition = ContainerTransition(identifier: segue.identifier ?? "UNKOWN-IDENTIFIER", destination: segue.destination, duration: 1.0, options: [.transitionCrossDissolve])
+        var containerTransition: ContainerTransition
+        
+        if let senderTransition = sender as? ContainerTransition {
+            containerTransition = ContainerTransition(identifier: senderTransition.identifier, destination: segue.destination, duration: senderTransition.duration, options: senderTransition.options)
+            containerTransition.destination = segue.destination
+        } else {
+            containerTransition = ContainerTransition(identifier: segue.identifier ?? "UNKOWN-IDENTIFIER", destination: segue.destination, duration: 1.0, options: [.transitionCrossDissolve])
+        }
         
         performContainerTransition(containerTransition)
     }
@@ -39,6 +46,10 @@ class ContainerViewController: UIViewController {
         }
         
         return shouldPerformSegue
+    }
+    
+    func performSegue(withContainerTransition containerTransition: ContainerTransition) {
+        self.performSegue(withIdentifier: containerTransition.identifier, sender: containerTransition)
     }
     
     override func performSegue(withIdentifier identifier: String, sender: Any?) {
@@ -114,20 +125,22 @@ class ContainerViewController: UIViewController {
     
     func performNextContainerTransition() {
         
-        if let nextContainerTransition = containerTransitionQueue.first, nextContainerTransition != self.activeContainerTransition {
+        if let nextContainerTransition = containerTransitionQueue.first, nextContainerTransition != self.activeContainerTransition, let destination = nextContainerTransition.destination {
             self.activeContainerTransition = nextContainerTransition
             
-            nextContainerTransition.destination.parentContainerViewController = self
-            nextContainerTransition.destination.view.frame = CGRect(origin: CGPoint.zero, size: view.frame.size)
+            destination.parentContainerViewController = self
+            destination.view.frame = CGRect(origin: CGPoint.zero, size: view.frame.size)
             
             let fromViewController = children.isEmpty ? nil : children[0]
             
-            swapFromViewController(fromViewController, toViewController: nextContainerTransition.destination, duration: nextContainerTransition.duration, options: nextContainerTransition.options) { [weak self] finished in
+            swapFromViewController(fromViewController, toViewController: destination, duration: nextContainerTransition.duration, options: nextContainerTransition.options) { [weak self] finished in
                 if let transitionIndex = self?.containerTransitionQueue.firstIndex(of: nextContainerTransition) {
                     self?.containerTransitionQueue.remove(at: transitionIndex)
                     self?.performNextContainerTransition()
                 }
             }
+        } else {
+            // TODO: Print some error here
         }
     }
     
@@ -201,7 +214,7 @@ extension UIViewController {
 
 struct ContainerTransition: Equatable {
     var identifier: String
-    var destination: UIViewController
+    var destination: UIViewController? = nil
     var duration: TimeInterval = 1.0
     var options: UIView.AnimationOptions = []
     
