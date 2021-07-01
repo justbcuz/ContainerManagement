@@ -7,8 +7,15 @@
 
 import UIKit
 
-enum RootSegueIdentifiers: String {
+enum RootSegueIdentifiers: String, CaseIterable {
     case launchScreen           = "ReuseLaunchScreenSegue"
+    case navigationTableView    = "NavigationTableViewSegue"
+    case red                    = "RedSegue"
+    case green                  = "GreenSegue"
+    case blue                   = "BlueSegue"
+}
+
+enum RandomSegueIdentifiers: String, CaseIterable {
     case navigationTableView    = "NavigationTableViewSegue"
     case red                    = "RedSegue"
     case green                  = "GreenSegue"
@@ -17,29 +24,43 @@ enum RootSegueIdentifiers: String {
 
 class RootViewController: UIViewController {
     
-    var containerViewController : ContainerViewController?
+    var ulTimer: Timer?
+    var ulContainerViewController : ContainerViewController?
+    
+    var urTimer: Timer?
+    var urContainerViewController : ContainerViewController?
+    
+    var mcTimer: Timer?
+    var mcContainerViewController : ContainerViewController?
+    
+    var llTimer: Timer?
+    var llContainerViewController : ContainerViewController?
+    
+    var lrTimer: Timer?
+    var lrContainerViewController : ContainerViewController?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        CVC_ANIMATE_ALL_TRANSITIONS = true
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.navigationTableView.rawValue, sender: nil)
+        ulTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval.random(in: 2.0...5.0), repeats: true) { timer in
+            self.randomContainerTransition(forContainerViewController: self.ulContainerViewController)
         }
         
-        // Force the Error
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.001) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.red.rawValue, sender: nil)
+        urTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval.random(in: 2.0...5.0), repeats: true) { timer in
+            self.randomContainerTransition(forContainerViewController: self.urContainerViewController)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.002) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.green.rawValue, sender: nil)
+        mcTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval.random(in: 2.0...5.0), repeats: true) { timer in
+            self.randomContainerTransition(forContainerViewController: self.mcContainerViewController)
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.003) {
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.blue.rawValue, sender: nil)
+        llTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval.random(in: 2.0...5.0), repeats: true) { timer in
+            self.randomContainerTransition(forContainerViewController: self.llContainerViewController)
+        }
+        
+        lrTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval.random(in: 2.0...5.0), repeats: true) { timer in
+            self.randomContainerTransition(forContainerViewController: self.lrContainerViewController)
         }
     }
     
@@ -47,17 +68,65 @@ class RootViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         switch segue.destination {
-            
         case let containerViewController as ContainerViewController:
             
-            self.containerViewController = containerViewController
-            self.containerViewController?.delegate = self
-            
-            self.containerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.launchScreen.rawValue, sender: nil)
+            switch segue.identifier {
+            case "UpperLeftEmbed":
+                
+                containerViewController.skipUnseenTransitions = true
+                containerViewController.delegate = self
+                self.ulContainerViewController = containerViewController
+                self.ulContainerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.red.rawValue, sender: nil)
+                
+            case "UpperRightEmbed":
+                
+                containerViewController.skipUnseenTransitions = true
+                containerViewController.delegate = self
+                self.urContainerViewController = containerViewController
+                self.urContainerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.green.rawValue, sender: nil)
+                
+            case "MiddleCenterEmbed":
+                
+                containerViewController.skipUnseenTransitions = true
+                containerViewController.delegate = self
+                self.mcContainerViewController = containerViewController
+                self.mcContainerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.blue.rawValue, sender: nil)
+                
+            case "LowerLeftEmbed":
+                
+                containerViewController.skipUnseenTransitions = true
+                containerViewController.delegate = self
+                self.llContainerViewController = containerViewController
+                self.llContainerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.green.rawValue, sender: nil)
+                
+            case "LowerRightEmbed":
+                
+                containerViewController.skipUnseenTransitions = true
+                containerViewController.delegate = self
+                self.lrContainerViewController = containerViewController
+                self.lrContainerViewController?.performSegue(withIdentifier: RootSegueIdentifiers.red.rawValue, sender: nil)
+                
+            default:
+                break
+            }
             
         default:
             break
         }
+    }
+    
+    func randomContainerTransition(forContainerViewController containerViewController: ContainerViewController?) {
+        let transitions:[UIView.AnimationOptions] = [.transitionFlipFromLeft,
+                                                     .transitionFlipFromRight,
+                                                     .transitionCurlUp,
+                                                     .transitionCurlDown,
+                                                     .transitionCrossDissolve,
+                                                     .transitionFlipFromTop,
+                                                     .transitionFlipFromBottom]
+        
+        let transition = ContainerTransition(identifier: RandomSegueIdentifiers.allCases.randomElement()!.rawValue, duration: TimeInterval.random(in: 1.0...2.0), options: transitions.randomElement()!)
+        
+        containerViewController?.performSegue(withContainerTransition: transition)
     }
 }
 
